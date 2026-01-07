@@ -1,11 +1,6 @@
-# Binaries (but not the cmd directories)
-/ezshare-cli
-/ezshare-sync
+# Binaries
+/dist
 /tmp
-*.exe
-*.dll
-*.so
-*.dylib
 
 # Test binary, built with `go test -c`
 *.test

@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# Reference: https://goreleaser.com/customization/
+version: 2
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+builds:
+  - main: ./cmd/ezshare-sync
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    flags:
+      - -trimpath
+    ldflags:
+      # Disables debug symbols (-s, -w), passes version information
+      - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
+universal_binaries:
+  - replace: true
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+release:
+  github:
+    owner: haimgel
+    name: ezshare-sync
+nfpms:
+  - id: packages
+    package_name: ezshare-sync
+    vendor: Haim Gelfenbeyn
+    homepage: https://github.com/haimgel/ezshare-sync
+    maintainer: Haim Gelfenbeyn <haim@g8n.me>
+    description: Synchronize files from EzShare Wi-Fi SD Card
+    license: Apache 2.0
+    formats:
+      - deb
+      - rpm
+      - apk
+    bindir: /usr/bin
+    contents:
+      - src: LICENSE
+        dst: /usr/share/doc/ezshare-sync/LICENSE
+    rpm:
+      group: Applications/System
+brews:
+  - repository:
+      owner: haimgel
+      name: homebrew-tools
+    name: ezshare-sync
+    homepage: "https://github.com/haimgel/ezshare-sync"
+    description: "Synchronize files from EzShare Wi-Fi SD Card."
+    directory: Formula
+    install: |
+      bin.install "ezshare-sync"
+    service: |
+      run [opt_bin/"ezshare-sync"]
+    test: |
+      assert_match /Usage of/, shell_output("#{bin}/ezshare-sync -h", 0)
+
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# vim: set ts=2 sw=2 tw=0 fo=cnqoj

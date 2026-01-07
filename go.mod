@@ -1,4 +1,4 @@
-module github.com/haimgel/ezshare-sync/ezshare
+module github.com/haimgel/ezshare-sync
 
 go 1.25.1
 

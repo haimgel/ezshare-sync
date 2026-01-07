@@ -7,19 +7,45 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/haimgel/ezshare-sync/ezshare"
 )
 
+// nolint: gochecknoglobals
+var (
+	version = "dev"
+	commit  = ""
+	date    = ""
+)
+
+func buildVersion(version, commit, date string) string {
+	result := fmt.Sprintf("ez-share v%s", version)
+	if commit != "" {
+		result = fmt.Sprintf("%s\ncommit: %s", result, commit)
+	}
+	if date != "" {
+		result = fmt.Sprintf("%s\nbuilt at: %s", result, date)
+	}
+	result = fmt.Sprintf("%s\ngoos: %s\ngoarch: %s", result, runtime.GOOS, runtime.GOARCH)
+	return result
+}
+
 func main() {
 	var (
-		baseURL   = flag.String("url", "http://192.168.4.1", "EZ-Share base URL")
-		proxyAddr = flag.String("proxy", "", "SOCKS5 proxy address (e.g., localhost:1080)")
-		targetDir = flag.String("target", "", "Target directory for sync (required)")
-		dryRun    = flag.Bool("dry-run", false, "Preview what would be synced without actually doing it")
+		baseURL      = flag.String("url", "http://192.168.4.1", "EZ-Share base URL")
+		proxyAddr    = flag.String("proxy", "", "SOCKS5 proxy address (e.g., localhost:1080)")
+		targetDir    = flag.String("target", "", "Target directory for sync (required)")
+		dryRun       = flag.Bool("dry-run", false, "Preview what would be synced without actually doing it")
+		printVersion = flag.Bool("version", false, "Print version information and exit")
 	)
 	flag.Parse()
+
+	if *printVersion {
+		fmt.Println(buildVersion(version, commit, date))
+		return
+	}
 
 	if *targetDir == "" {
 		log.Fatal("Error: --target flag is required")
