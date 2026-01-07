@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://www.schemastore.org/dependabot-2.0.json
+# Reference: https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+
+updates:
+  - package-ecosystem: "gomod"
+    directory: "/"
+    assignees:
+      - "haimgel"
+    schedule:
+      interval: "quarterly"
+    commit-message:
+      prefix: "deps"
+    cooldown:
+      default-days: 7
+    groups:
+      go-major:
+        update-types: ["major"]
+      go-minor-patch:
+        update-types: ["minor", "patch"]
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    assignees:
+      - "haimgel"
+    schedule:
+      interval: "quarterly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "ci"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    labels:
+      - "dependencies"
