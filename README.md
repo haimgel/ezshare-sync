@@ -1,5 +1,9 @@
 # ezshare-sync - EZ Share WiFi SD Card Sync Tool
 
+[![Release](https://img.shields.io/github/release/haimgel/ezshare-sync.svg?style=flat)](https://github.com/haimgel/mqtt2cmd/releases/latest)
+[![Software license](https://img.shields.io/github/license/haimgel/ezshare-sync.svg?style=flat)](/LICENSE)
+[![Build status](https://img.shields.io/github/actions/workflow/status/haimgel/ezshare-sync/test.yaml?style=flat)](https://github.com/haimgel/mqtt2cmd/actions?workflow=release)
+
 A tool for downloading files from EZ Share Wi-Fi enabled SD Cards. 
 
 ## What This Is
