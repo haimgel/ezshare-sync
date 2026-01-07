@@ -9,7 +9,13 @@ import (
 )
 
 // DownloadFile downloads a file from the device and saves it to the specified destination path.
-func (c *Client) DownloadFile(ctx context.Context, entry *Entry, destPath string) (err error) {
+func (c *Client) DownloadFile(ctx context.Context, entry *Entry, destPath string) error {
+	return c.retryOperation(ctx, func() error {
+		return c.downloadFileAttempt(ctx, entry, destPath)
+	})
+}
+
+func (c *Client) downloadFileAttempt(ctx context.Context, entry *Entry, destPath string) (err error) {
 	reader, err := c.GetFile(ctx, entry)
 	if err != nil {
 		return err

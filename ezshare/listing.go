@@ -27,6 +27,18 @@ type rawEntry struct {
 
 // ListDirectory returns the contents of a directory on the device.
 func (c *Client) ListDirectory(ctx context.Context, dirPath string) ([]*Entry, error) {
+	var entries []*Entry
+	err := c.retryOperation(ctx, func() error {
+		result, err := c.listDirectoryAttempt(ctx, dirPath)
+		if err == nil {
+			entries = result
+		}
+		return err
+	})
+	return entries, err
+}
+
+func (c *Client) listDirectoryAttempt(ctx context.Context, dirPath string) ([]*Entry, error) {
 	apiPath := convertUnixPathToAPI(dirPath)
 	listURL := c.buildURL("/dir", "dir", apiPath)
 

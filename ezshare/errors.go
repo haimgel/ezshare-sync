@@ -7,4 +7,6 @@ var (
 	ErrNotFound = errors.New("file or directory not found")
 	// ErrInvalidResponse is returned when the device returns an unexpected response format.
 	ErrInvalidResponse = errors.New("invalid response from device")
+	// ErrServerError is returned when the device returns a 5xx HTTP status code.
+	ErrServerError = errors.New("server error")
 )

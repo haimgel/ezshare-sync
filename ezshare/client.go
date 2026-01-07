@@ -2,6 +2,7 @@ package ezshare
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -35,7 +36,7 @@ func NewClient(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		baseURL:    parsedURL,
-		timeout:    30 * time.Second,
+		timeout:    3 * time.Minute,
 		maxRetries: 3,
 		userAgent:  "ezshare-go/1.0",
 	}
@@ -87,6 +88,25 @@ func (c *Client) buildURL(path, paramName, paramValue string) string {
 }
 
 func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
+	reqWithCtx := req.Clone(ctx)
+	if c.userAgent != "" {
+		reqWithCtx.Header.Set("User-Agent", c.userAgent)
+	}
+
+	resp, err := c.httpClient.Do(reqWithCtx)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+		_ = resp.Body.Close()
+		return nil, fmt.Errorf("%w: HTTP %d", ErrServerError, resp.StatusCode)
+	}
+
+	return resp, nil
+}
+
+func (c *Client) retryOperation(ctx context.Context, operation func() error) error {
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
@@ -94,29 +114,41 @@ func (c *Client) doRequest(ctx context.Context, req *http.Request) (*http.Respon
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return ctx.Err()
 			}
 		}
 
-		reqWithCtx := req.Clone(ctx)
-		if c.userAgent != "" {
-			reqWithCtx.Header.Set("User-Agent", c.userAgent)
+		err := operation()
+		if err == nil {
+			return nil
 		}
 
-		resp, err := c.httpClient.Do(reqWithCtx)
-		if err != nil {
-			lastErr = err
-			continue
+		if !isRetriableError(err) {
+			return err
 		}
 
-		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-			_ = resp.Body.Close()
-			lastErr = fmt.Errorf("server error: HTTP %d", resp.StatusCode)
-			continue
-		}
-		return resp, nil
+		lastErr = err
 	}
-	return nil, fmt.Errorf("request failed after %d retries: %w", c.maxRetries, lastErr)
+	return fmt.Errorf("operation failed after %d retries: %w", c.maxRetries, lastErr)
+}
+
+func isRetriableError(err error) bool {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	if errors.Is(err, ErrServerError) {
+		return true
+	}
+
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+
+	return false
 }
 
 func convertUnixPathToAPI(path string) string {

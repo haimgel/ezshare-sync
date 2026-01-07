@@ -20,6 +20,18 @@ type versionDevice struct {
 
 // GetVersion retrieves the firmware version information from the device.
 func (c *Client) GetVersion(ctx context.Context) (*Version, error) {
+	var version *Version
+	err := c.retryOperation(ctx, func() error {
+		result, err := c.getVersionAttempt(ctx)
+		if err == nil {
+			version = result
+		}
+		return err
+	})
+	return version, err
+}
+
+func (c *Client) getVersionAttempt(ctx context.Context) (*Version, error) {
 	versionURL := c.buildURL("/client", "command", "version")
 
 	req, err := http.NewRequest("GET", versionURL, nil)
