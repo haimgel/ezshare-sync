@@ -34,15 +34,6 @@ See [README.md](README.md) for project overview and [API.md](API.md) for the HTT
 - Run tests after every significant change
 - Use actual HTML/XML responses in test cases
 
-### 4. Iterative Refinement
-
-Major changes requested:
-1. **Path API change**: Changed from DOS-style (`A:\DATALOG`) to Unix-style (`/DATALOG`)
-2. **Documentation consolidation**: Reduced 9+ markdown files to just 2 (API.md, README.md)
-3. **Code cleanup**: Removed all self-evident comments and unnecessary whitespace
-4. **Public API docs**: Added concise one-liner documentation for all public API elements
-5. **Remove redundant files**: Deleted example_test.go (redundant with README and CLI)
-
 ## Code Style Preferences
 
 ### What to Include
