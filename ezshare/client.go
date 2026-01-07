@@ -13,6 +13,11 @@ import (
 	"golang.org/x/net/proxy"
 )
 
+// Logger is the interface for logging retry attempts.
+type Logger interface {
+	Printf(format string, v ...interface{})
+}
+
 // Client provides access to an EZ-Share WiFi SD card.
 type Client struct {
 	baseURL    *url.URL
@@ -21,6 +26,7 @@ type Client struct {
 	timeout    time.Duration
 	maxRetries int
 	userAgent  string
+	logger     Logger
 }
 
 // NewClient creates a new EZ-Share client with the given base URL and options.
@@ -36,7 +42,7 @@ func NewClient(baseURL string, opts ...Option) (*Client, error) {
 
 	c := &Client{
 		baseURL:    parsedURL,
-		timeout:    3 * time.Minute,
+		timeout:    10 * time.Minute,
 		maxRetries: 3,
 		userAgent:  "ezshare-go/1.0",
 	}
@@ -48,7 +54,7 @@ func NewClient(baseURL string, opts ...Option) (*Client, error) {
 	if c.httpClient == nil {
 		transport := &http.Transport{
 			DialContext: (&net.Dialer{
-				Timeout:   5 * time.Second,
+				Timeout:   10 * time.Second,
 				KeepAlive: 30 * time.Second,
 			}).DialContext,
 			MaxIdleConns:        10,
@@ -111,6 +117,9 @@ func (c *Client) retryOperation(ctx context.Context, operation func() error) err
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
 			backoff := time.Duration(1<<uint(attempt-1)) * 500 * time.Millisecond
+			if c.logger != nil {
+				c.logger.Printf("Retrying operation (attempt %d/%d) after error: %v (waiting %v)", attempt, c.maxRetries, lastErr, backoff)
+			}
 			select {
 			case <-time.After(backoff):
 			case <-ctx.Done():

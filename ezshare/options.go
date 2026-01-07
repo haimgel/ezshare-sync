@@ -42,3 +42,10 @@ func WithUserAgent(userAgent string) Option {
 		c.userAgent = userAgent
 	}
 }
+
+// WithLogger sets a logger for retry attempts and other operations.
+func WithLogger(logger Logger) Option {
+	return func(c *Client) {
+		c.logger = logger
+	}
+}

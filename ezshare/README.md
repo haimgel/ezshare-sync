@@ -121,5 +121,6 @@ client, err := ezshare.NewClient(
     ezshare.WithTimeout(60 * time.Second),
     ezshare.WithRetries(5),
     ezshare.WithUserAgent("my-app/1.0"),
+    ezshare.WithLogger(log.Default()), // Log retry attempts
 )
 ```

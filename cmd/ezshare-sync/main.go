@@ -55,6 +55,7 @@ func main() {
 	if *proxyAddr != "" {
 		opts = append(opts, ezshare.WithSOCKS5Proxy(*proxyAddr))
 	}
+	opts = append(opts, ezshare.WithLogger(log.Default()))
 
 	client, err := ezshare.NewClient(*baseURL, opts...)
 	if err != nil {
