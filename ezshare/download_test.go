@@ -55,22 +55,19 @@ func setupTestServer(t *testing.T, content string) (*httptest.Server, *Entry) {
 	return server, entry
 }
 
-func TestDownloadFile_SmallFile_NoResume(t *testing.T) {
-	content := "Small file content"
-	server, entry := setupTestServer(t, content)
-	defer server.Close()
-
-	entry.Size = int64(len(content))
-
-	client, err := NewClient(server.URL)
+func createTestClient(t *testing.T, serverURL string, opts ...Option) *Client {
+	t.Helper()
+	client, err := NewClient(serverURL, opts...)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
+	return client
+}
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "test.txt")
+func downloadAndVerify(t *testing.T, client *Client, entry *Entry, destPath, expectedContent string) {
+	t.Helper()
 
-	err = client.DownloadFile(context.Background(), entry, destPath)
+	err := client.DownloadFile(context.Background(), entry, destPath)
 	if err != nil {
 		t.Fatalf("Download failed: %v", err)
 	}
@@ -80,9 +77,27 @@ func TestDownloadFile_SmallFile_NoResume(t *testing.T) {
 		t.Fatalf("Failed to read downloaded file: %v", err)
 	}
 
-	if string(downloaded) != content {
-		t.Errorf("Content mismatch: got %q, want %q", string(downloaded), content)
+	if string(downloaded) != expectedContent {
+		t.Errorf("Content mismatch: got length %d, want %d", len(downloaded), len(expectedContent))
 	}
+}
+
+func createPartialFile(t *testing.T, destPath, content string, partialSize int64) {
+	t.Helper()
+	if err := os.WriteFile(destPath, []byte(content[:partialSize]), 0644); err != nil {
+		t.Fatalf("Failed to create partial file: %v", err)
+	}
+}
+
+func TestDownloadFile_SmallFile_NoResume(t *testing.T) {
+	content := "Small file content"
+	server, entry := setupTestServer(t, content)
+	defer server.Close()
+
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "test.txt")
+
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestDownloadFile_BelowThreshold_NoResume(t *testing.T) {
@@ -90,32 +105,11 @@ func TestDownloadFile_BelowThreshold_NoResume(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "below.txt")
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "below.txt")
-
-	partialSize := int64(len(content) / 2)
-	if err := os.WriteFile(destPath, []byte(content[:partialSize]), 0644); err != nil {
-		t.Fatalf("Failed to create partial file: %v", err)
-	}
-
-	err = client.DownloadFile(context.Background(), entry, destPath)
-	if err != nil {
-		t.Fatalf("Download failed: %v", err)
-	}
-
-	downloaded, err := os.ReadFile(destPath)
-	if err != nil {
-		t.Fatalf("Failed to read downloaded file: %v", err)
-	}
-
-	if string(downloaded) != content {
-		t.Errorf("Content mismatch: got length %d, want %d", len(downloaded), len(content))
-	}
+	createPartialFile(t, destPath, content, int64(len(content)/2))
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestDownloadFile_AboveThreshold_ResumesFromPartial(t *testing.T) {
@@ -123,32 +117,11 @@ func TestDownloadFile_AboveThreshold_ResumesFromPartial(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "above.txt")
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "above.txt")
-
-	partialSize := int64(len(content) / 2)
-	if err := os.WriteFile(destPath, []byte(content[:partialSize]), 0644); err != nil {
-		t.Fatalf("Failed to create partial file: %v", err)
-	}
-
-	err = client.DownloadFile(context.Background(), entry, destPath)
-	if err != nil {
-		t.Fatalf("Download failed: %v", err)
-	}
-
-	downloaded, err := os.ReadFile(destPath)
-	if err != nil {
-		t.Fatalf("Failed to read downloaded file: %v", err)
-	}
-
-	if string(downloaded) != content {
-		t.Errorf("Content mismatch: got length %d, want %d", len(downloaded), len(content))
-	}
+	createPartialFile(t, destPath, content, int64(len(content)/2))
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestDownloadFile_LargeFile_FirstAttempt(t *testing.T) {
@@ -156,27 +129,10 @@ func TestDownloadFile_LargeFile_FirstAttempt(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "large.txt")
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "large.txt")
-
-	err = client.DownloadFile(context.Background(), entry, destPath)
-	if err != nil {
-		t.Fatalf("Download failed: %v", err)
-	}
-
-	downloaded, err := os.ReadFile(destPath)
-	if err != nil {
-		t.Fatalf("Failed to read downloaded file: %v", err)
-	}
-
-	if string(downloaded) != content {
-		t.Errorf("Content length mismatch: got %d, want %d", len(downloaded), len(content))
-	}
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestDownloadFile_ResumeFromPartial(t *testing.T) {
@@ -184,32 +140,11 @@ func TestDownloadFile_ResumeFromPartial(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "resume.txt")
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "resume.txt")
-
-	partialSize := int64(len(content) / 2)
-	if err := os.WriteFile(destPath, []byte(content[:partialSize]), 0644); err != nil {
-		t.Fatalf("Failed to create partial file: %v", err)
-	}
-
-	err = client.DownloadFile(context.Background(), entry, destPath)
-	if err != nil {
-		t.Fatalf("Resume download failed: %v", err)
-	}
-
-	downloaded, err := os.ReadFile(destPath)
-	if err != nil {
-		t.Fatalf("Failed to read downloaded file: %v", err)
-	}
-
-	if string(downloaded) != content {
-		t.Errorf("Content mismatch after resume: got length %d, want %d", len(downloaded), len(content))
-	}
+	createPartialFile(t, destPath, content, int64(len(content)/2))
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestDownloadFile_CorruptedPartial_Restart(t *testing.T) {
@@ -217,32 +152,15 @@ func TestDownloadFile_CorruptedPartial_Restart(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "corrupted.txt")
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "corrupted.txt")
 
 	corruptedSize := entry.Size + 1000
 	if err := os.WriteFile(destPath, make([]byte, corruptedSize), 0644); err != nil {
 		t.Fatalf("Failed to create corrupted file: %v", err)
 	}
 
-	err = client.DownloadFile(context.Background(), entry, destPath)
-	if err != nil {
-		t.Fatalf("Download after corruption failed: %v", err)
-	}
-
-	downloaded, err := os.ReadFile(destPath)
-	if err != nil {
-		t.Fatalf("Failed to read downloaded file: %v", err)
-	}
-
-	if string(downloaded) != content {
-		t.Errorf("Content mismatch: got length %d, want %d", len(downloaded), len(content))
-	}
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestDownloadFile_EmptyPartial_Restart(t *testing.T) {
@@ -250,31 +168,14 @@ func TestDownloadFile_EmptyPartial_Restart(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
-
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "empty.txt")
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "empty.txt")
 
 	if err := os.WriteFile(destPath, []byte{}, 0644); err != nil {
 		t.Fatalf("Failed to create empty file: %v", err)
 	}
 
-	err = client.DownloadFile(context.Background(), entry, destPath)
-	if err != nil {
-		t.Fatalf("Download failed: %v", err)
-	}
-
-	downloaded, err := os.ReadFile(destPath)
-	if err != nil {
-		t.Fatalf("Failed to read downloaded file: %v", err)
-	}
-
-	if string(downloaded) != content {
-		t.Errorf("Content mismatch: got length %d, want %d", len(downloaded), len(content))
-	}
+	downloadAndVerify(t, client, entry, destPath, content)
 }
 
 func TestGetFileWithRange(t *testing.T) {
@@ -282,10 +183,7 @@ func TestGetFileWithRange(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
 
 	offset := int64(1000)
 	reader, err := client.getFileWithRange(context.Background(), entry, offset)
@@ -314,13 +212,10 @@ func TestGetFileWithRange_InvalidOffset(t *testing.T) {
 	server, entry := setupTestServer(t, content)
 	defer server.Close()
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
 
 	offset := int64(len(content) + 100)
-	_, err = client.getFileWithRange(context.Background(), entry, offset)
+	_, err := client.getFileWithRange(context.Background(), entry, offset)
 	if err == nil {
 		t.Error("Expected error for invalid offset, got nil")
 	}
@@ -377,15 +272,10 @@ func TestDownloadFile_ServerError(t *testing.T) {
 		Size: 1000,
 	}
 
-	client, err := NewClient(server.URL, WithRetries(1))
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL, WithRetries(1))
+	destPath := filepath.Join(t.TempDir(), "error.txt")
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "error.txt")
-
-	err = client.DownloadFile(context.Background(), entry, destPath)
+	err := client.DownloadFile(context.Background(), entry, destPath)
 	if err == nil {
 		t.Error("Expected error for server error, got nil")
 	}
@@ -403,15 +293,10 @@ func TestDownloadFile_NotFound(t *testing.T) {
 		Size: 1000,
 	}
 
-	client, err := NewClient(server.URL)
-	if err != nil {
-		t.Fatalf("Failed to create client: %v", err)
-	}
+	client := createTestClient(t, server.URL)
+	destPath := filepath.Join(t.TempDir(), "notfound.txt")
 
-	tmpDir := t.TempDir()
-	destPath := filepath.Join(tmpDir, "notfound.txt")
-
-	err = client.DownloadFile(context.Background(), entry, destPath)
+	err := client.DownloadFile(context.Background(), entry, destPath)
 	if err == nil {
 		t.Error("Expected error for 404, got nil")
 	}
