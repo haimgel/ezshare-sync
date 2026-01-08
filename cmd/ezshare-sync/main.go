@@ -149,6 +149,7 @@ func syncFile(ctx context.Context, client *ezshare.Client, entry *ezshare.Entry,
 	}
 
 	tempPath := localPath + ".tmp"
+	_ = os.Remove(tempPath)
 	if err := client.DownloadFile(ctx, entry, tempPath); err != nil {
 		_ = os.Remove(tempPath)
 		return fmt.Errorf("failed to download: %w", err)
