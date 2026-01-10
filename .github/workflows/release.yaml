@@ -35,14 +35,15 @@ jobs:
         env:
           # This needs write access to the brew tap repo
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+
+      - name: Publish packages to Cloudsmith
+        run: make publish-cloudsmith
+        env:
           CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
 
-      - name: Generate build attestation for artifacts
+      - name: Generate build attestation for archives
         uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 #v3.1.0
         with:
           subject-path: |
-            ./dist/ezshare-sync_*.gz
+            ./dist/ezshare-sync_*.tar.gz
             ./dist/ezshare-sync_*.zip
-            ./dist/ezshare-sync_*.apk
-            ./dist/ezshare-sync_*.deb
-            ./dist/ezshare-sync_*.rpm

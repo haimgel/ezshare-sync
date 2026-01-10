@@ -80,37 +80,6 @@ brews:
       run [opt_bin/"ezshare-sync"]
     test: |
       assert_match /Usage of/, shell_output("#{bin}/ezshare-sync -h", 0)
-publishers:
-  - name: cloudsmith-deb
-    ids:
-      - packages
-    cmd: |
-      if [[ "{{ .ArtifactPath }}" == *.deb ]]; then
-        cloudsmith push deb haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
-      fi
-    env:
-      - PATH={{ .Env.PATH }}
-      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
-  - name: cloudsmith-rpm
-    ids:
-      - packages
-    cmd: |
-      if [[ "{{ .ArtifactPath }}" == *.rpm ]]; then
-        cloudsmith push rpm haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
-      fi
-    env:
-      - PATH={{ .Env.PATH }}
-      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
-  - name: cloudsmith-alpine
-    ids:
-      - packages
-    cmd: |
-      if [[ "{{ .ArtifactPath }}" == *.apk ]]; then
-        cloudsmith push alpine haimgel/public/alpine/any-version {{ abs .ArtifactPath }}
-      fi
-    env:
-      - PATH={{ .Env.PATH }}
-      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
