@@ -76,8 +76,6 @@ brews:
     directory: Formula
     install: |
       bin.install "ezshare-sync"
-    service: |
-      run [opt_bin/"ezshare-sync"]
     test: |
       assert_match /Usage of/, shell_output("#{bin}/ezshare-sync -h", 0)
 
