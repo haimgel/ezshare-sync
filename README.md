@@ -3,6 +3,7 @@
 [![Release](https://img.shields.io/github/release/haimgel/ezshare-sync.svg?style=flat)](https://github.com/haimgel/mqtt2cmd/releases/latest)
 [![Software license](https://img.shields.io/github/license/haimgel/ezshare-sync.svg?style=flat)](/LICENSE)
 [![Build status](https://img.shields.io/github/actions/workflow/status/haimgel/ezshare-sync/test.yaml?style=flat)](https://github.com/haimgel/mqtt2cmd/actions?workflow=release)
+[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=flat)](https://cloudsmith.com)
 
 A tool for downloading files from EZ Share Wi-Fi enabled SD Cards. 
 
@@ -36,12 +37,38 @@ sleep therapy data with tools like OSCAR.
 
 ### Installation
 
+**On macOS:**
 ```bash
-# Clone and build
-git clone https://github.com/haim/ez-share-api.git
-cd ez-share-api
-go build -o ezshare-sync ./cmd/ezshare-sync
+# Add tap to your Homebrew
+brew tap haimgel/tools
+
+# Install it
+brew install ezshare-sync
 ```
+
+**On Windows:**
+
+Download the `.zip` file from the [releases page](https://github.com/haimgel/ezshare-sync/releases), extract it, and add the directory to your PATH.
+
+**On Linux:**
+
+Option 1: Using package repositories
+```bash
+# Debian/Ubuntu - add Cloudsmith repository
+curl -1sLf 'https://dl.cloudsmith.io/public/haimgel/public/setup.deb.sh' | sudo -E bash
+sudo apt install ezshare-sync
+
+# RedHat/Fedora/CentOS - add Cloudsmith repository
+curl -1sLf 'https://dl.cloudsmith.io/public/haimgel/public/setup.rpm.sh' | sudo -E bash
+sudo dnf install ezshare-sync
+
+# Alpine - add Cloudsmith repository
+curl -1sLf 'https://dl.cloudsmith.io/public/haimgel/public/setup.alpine.sh' | sudo -E sh
+sudo apk add ezshare-sync
+```
+
+Option 2: Direct download
+Download RPMs/DEBs/APKs from the [releases page](https://github.com/haimgel/ezshare-sync/releases).
 
 ### Basic Usage
 

@@ -12,6 +12,7 @@ builds:
     goos:
       - linux
       - darwin
+      - windows
     goarch:
       - amd64
       - arm64
@@ -23,6 +24,16 @@ builds:
       - -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{ .CommitDate }}
 universal_binaries:
   - replace: true
+archives:
+  - files:
+      - LICENSE
+      - README.md
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -69,6 +80,31 @@ brews:
       run [opt_bin/"ezshare-sync"]
     test: |
       assert_match /Usage of/, shell_output("#{bin}/ezshare-sync -h", 0)
+publishers:
+  - name: cloudsmith-deb
+    ids:
+      - packages
+    cmd: |
+      cloudsmith push deb haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
+    env:
+      - PATH={{ .Env.PATH }}
+      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+  - name: cloudsmith-rpm
+    ids:
+      - packages
+    cmd: |
+      cloudsmith push rpm haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
+    env:
+      - PATH={{ .Env.PATH }}
+      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
+  - name: cloudsmith-alpine
+    ids:
+      - packages
+    cmd: |
+      cloudsmith push alpine haimgel/public/alpine/any-version {{ abs .ArtifactPath }}
+    env:
+      - PATH={{ .Env.PATH }}
+      - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
 
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
