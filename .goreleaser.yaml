@@ -85,7 +85,9 @@ publishers:
     ids:
       - packages
     cmd: |
-      cloudsmith push deb haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
+      if [[ "{{ .ArtifactPath }}" == *.deb ]]; then
+        cloudsmith push deb haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
+      fi
     env:
       - PATH={{ .Env.PATH }}
       - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
@@ -93,7 +95,9 @@ publishers:
     ids:
       - packages
     cmd: |
-      cloudsmith push rpm haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
+      if [[ "{{ .ArtifactPath }}" == *.rpm ]]; then
+        cloudsmith push rpm haimgel/public/any-distro/any-version {{ abs .ArtifactPath }}
+      fi
     env:
       - PATH={{ .Env.PATH }}
       - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
@@ -101,7 +105,9 @@ publishers:
     ids:
       - packages
     cmd: |
-      cloudsmith push alpine haimgel/public/alpine/any-version {{ abs .ArtifactPath }}
+      if [[ "{{ .ArtifactPath }}" == *.apk ]]; then
+        cloudsmith push alpine haimgel/public/alpine/any-version {{ abs .ArtifactPath }}
+      fi
     env:
       - PATH={{ .Env.PATH }}
       - CLOUDSMITH_API_KEY={{ .Env.CLOUDSMITH_API_KEY }}
