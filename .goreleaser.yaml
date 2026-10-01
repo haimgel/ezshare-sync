@@ -66,6 +66,8 @@ nfpms:
         dst: /usr/share/doc/ezshare-sync/LICENSE
     rpm:
       group: Applications/System
+# Deprecated in favour of homebrew_casks, but casks are macOS-only and would drop Linuxbrew users.
+# Still works in GoReleaser v2 (warning only); revisit before moving to v3.
 brews:
   - repository:
       owner: haimgel
