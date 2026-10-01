@@ -37,6 +37,7 @@ func main() {
 		baseURL      = flag.String("url", "http://192.168.4.1", "EZ-Share base URL")
 		proxyAddr    = flag.String("proxy", "", "SOCKS5 proxy address (e.g., localhost:1080)")
 		targetDir    = flag.String("target", "", "Target directory for sync (required)")
+		retries      = flag.Int("retries", ezshare.DefaultMaxRetries, "Retry attempts for each listing or download on network errors")
 		dryRun       = flag.Bool("dry-run", false, "Preview what would be synced without actually doing it")
 		printVersion = flag.Bool("version", false, "Print version information and exit")
 	)
@@ -55,7 +56,7 @@ func main() {
 	if *proxyAddr != "" {
 		opts = append(opts, ezshare.WithSOCKS5Proxy(*proxyAddr))
 	}
-	opts = append(opts, ezshare.WithLogger(log.Default()))
+	opts = append(opts, ezshare.WithRetries(*retries), ezshare.WithLogger(log.Default()))
 
 	client, err := ezshare.NewClient(*baseURL, opts...)
 	if err != nil {

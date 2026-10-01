@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -11,6 +12,14 @@ import (
 	"time"
 
 	"golang.org/x/net/proxy"
+)
+
+// DefaultMaxRetries spans about 90 seconds of backoff, enough to ride out the card's Wi-Fi dropping out.
+const DefaultMaxRetries = 8
+
+const (
+	initialRetryBackoff = 500 * time.Millisecond
+	maxRetryBackoff     = 30 * time.Second
 )
 
 // Logger is the interface for logging retry attempts.
@@ -43,7 +52,7 @@ func NewClient(baseURL string, opts ...Option) (*Client, error) {
 	c := &Client{
 		baseURL:    parsedURL,
 		timeout:    10 * time.Minute,
-		maxRetries: 3,
+		maxRetries: DefaultMaxRetries,
 		userAgent:  "ezshare-go/1.0",
 	}
 
@@ -116,7 +125,7 @@ func (c *Client) retryOperation(ctx context.Context, operation func() error) err
 	var lastErr error
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		if attempt > 0 {
-			backoff := time.Duration(1<<uint(attempt-1)) * 500 * time.Millisecond
+			backoff := retryBackoff(attempt)
 			if c.logger != nil {
 				c.logger.Printf("Retrying operation (attempt %d/%d) after error: %v (waiting %v)", attempt, c.maxRetries, lastErr, backoff)
 			}
@@ -141,6 +150,14 @@ func (c *Client) retryOperation(ctx context.Context, operation func() error) err
 	return fmt.Errorf("operation failed after %d retries: %w", c.maxRetries, lastErr)
 }
 
+func retryBackoff(attempt int) time.Duration {
+	backoff := initialRetryBackoff
+	for i := 1; i < attempt && backoff < maxRetryBackoff; i++ {
+		backoff *= 2
+	}
+	return min(backoff, maxRetryBackoff)
+}
+
 func isRetriableError(err error) bool {
 	if errors.Is(err, context.DeadlineExceeded) {
 		return true
@@ -152,12 +169,21 @@ func isRetriableError(err error) bool {
 		return true
 	}
 
+	if errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+
 	var netErr net.Error
 	if errors.As(err, &netErr) && netErr.Timeout() {
 		return true
 	}
 
-	return false
+	// Any transport failure is retriable: http.Client wraps them all in *url.Error, and a SOCKS proxy
+	// reports the card as a *net.OpError ("host unreachable") while its Wi-Fi is still coming up.
+	// Matched by type because syscall.Errno also satisfies net.Error, which would retry local disk errors.
+	var urlErr *url.Error
+	var opErr *net.OpError
+	return errors.As(err, &urlErr) || errors.As(err, &opErr)
 }
 
 func convertUnixPathToAPI(path string) string {

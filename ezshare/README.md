@@ -11,7 +11,7 @@ telemetry data. It can also be used for any application that needs to access fil
 - ✅ Download files from the SD card
 - ✅ Get firmware version information
 - ✅ Support for SOCKS5 proxy
-- ✅ Automatic retry logic with exponential backoff
+- ✅ Automatic retry with exponential backoff on network errors, timeouts and 5xx responses
 - ✅ Context support for cancellation and timeouts
 - ✅ Unix-style path notation (automatically converted to DOS format)
 - ✅ Minimal dependencies

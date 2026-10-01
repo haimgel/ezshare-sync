@@ -78,6 +78,9 @@ Download RPMs/DEBs/APKs from the [releases page](https://github.com/haimgel/ezsh
 
 # Preview what would be synced (dry run)
 ./ezshare-sync -target ~/cpap-data -dry-run
+
+# Retry longer if the card's Wi-Fi is slow to come up (default 8 retries, about 90s of backoff)
+./ezshare-sync -target ~/cpap-data -retries 12
 ```
 
 The tool will:
